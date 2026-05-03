@@ -10,7 +10,7 @@
     </div>
 
     <CharacterCard v-if="char" :char="char" />
-    <StrokeAnimation v-if="char" :hanzi="char.hanzi" />
+    <StrokeAnimation v-if="char" :key="char.hanzi" :hanzi="char.hanzi" />
     <WritingCanvas v-if="char" :hanzi="char.hanzi" />
 
     <div class="flex justify-center gap-4 py-2">
