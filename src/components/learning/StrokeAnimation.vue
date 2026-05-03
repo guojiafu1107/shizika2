@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import HanziWriter from 'hanzi-writer'
 
 const props = defineProps({
@@ -26,12 +26,17 @@ const props = defineProps({
 const writerContainer = ref(null)
 let writer = null
 
-function initWriter() {
+async function initWriter() {
   if (!writerContainer.value || !props.hanzi) return
+  // 等待 DOM 更新完成，确保容器已清空/重建
+  await nextTick()
+
   if (writer) {
     writer.cancelAnimation()
-    writerContainer.value.innerHTML = ''
+    writer = null
   }
+  writerContainer.value.innerHTML = ''
+
   try {
     writer = HanziWriter.create(writerContainer.value, props.hanzi, {
       width: 320,
@@ -50,6 +55,8 @@ function initWriter() {
       highlightOnComplete: true,
       highlightColor: '#4CAF50'
     })
+    // 新字创建后自动播放笔顺
+    writer.animateCharacter()
   } catch (e) {
     console.error('HanziWriter init failed:', e)
     writerContainer.value.innerHTML = `<div class="flex items-center justify-center h-full text-gray-400">笔顺数据加载中...</div>`
@@ -71,6 +78,6 @@ function resetAnimation() {
 }
 
 onMounted(initWriter)
-watch(() => props.hanzi, initWriter)
+watch(() => props.hanzi, () => initWriter())
 onUnmounted(() => { writer = null })
 </script>
