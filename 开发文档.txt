@@ -1,0 +1,437 @@
+幼小衔接拼音·汉字学习卡 WEB 应用开发文档
+
+一、项目概述
+
+1.1 项目背景
+
+针对5-7岁幼小衔接儿童识字需求，基于《现代汉语常用字表》（2500常用字）前500字（按原顺序），开发纯前端WEB应用，通过「学习-练习-反馈」闭环帮助儿童掌握拼音、汉字读写基础能力。
+
+1.2 核心目标
+
+• 功能性：实现500字按顺序学习、笔顺动画演示、发音朗读、游戏化练习
+
+• 易用性：适配手机/平板/PC，操作零门槛（大按钮、语音引导、无复杂菜单）
+
+• 轻量化：纯前端实现，无需后端服务，可离线运行（通过PWA）
+
+• 安全性：无广告、无第三方追踪、无用户隐私数据采集
+
+二、技术栈与环境
+
+2.1 核心技术栈
+
+分类 技术方案 说明
+
+前端框架 Vue 3（Composition API） 组件化开发，轻量高效，适合中小型项目
+
+样式方案 Tailwind CSS + 原生CSS 快速响应式布局，自定义卡通主题（明亮配色、圆角元素）
+
+动画实现 SVG（笔顺动画）+ CSS Animation（交互动效） SVG精确控制笔画路径，CSS动画降低性能消耗
+
+能力API Web Speech API（发音）、Canvas API（书写练习）、LocalStorage（进度存储） 纯浏览器原生能力，无需插件
+
+构建工具 Vite 快速热更新，优化打包体积
+
+部署环境 静态资源服务器（GitHub Pages/腾讯云COS/Netlify） 纯静态文件部署，零服务器成本
+
+2.2 开发环境要求
+
+• Node.js ≥ v16.0.0
+
+• npm ≥ v8.0.0 或 yarn ≥ v1.22.0
+
+• 现代浏览器（Chrome 90+/Edge 90+/Safari 14+/Firefox 88+）
+
+三、项目结构设计
+
+
+pinyin-hanzi-learning/
+├── public/                  # 静态资源
+│   ├── data/                # 核心数据
+│   │   └── characters.json  # 500字结构化数据（必填）
+│   ├── audio/               # 备用发音文件（可选，当Web Speech API不可用时）
+│   └── images/              # UI图片（卡通IP、勋章等）
+├── src/
+│   ├── assets/              # 样式、字体
+│   │   ├── css/             # 全局样式、Tailwind配置
+│   │   └── fonts/          # 楷体字体文件（确保汉字显示规范）
+│   ├── components/          # 复用组件
+│   │   ├── common/          # 通用组件（Button、NavBar、ProgressBar）
+│   │   ├── learning/        # 学习模块组件（CharacterCard、StrokeAnimation）
+│   │   └── practice/        # 练习模块组件（QuizCard、WritingCanvas）
+│   ├── views/               # 页面视图
+│   │   ├── HomeView.vue     # 首页
+│   │   ├── LearnView.vue    # 学习页
+│   │   ├── PracticeView.vue # 练习页
+│   │   └── ProfileView.vue  # 进度页
+│   ├── utils/               # 工具函数
+│   │   ├── speech.js        # 发音功能封装
+│   │   ├── storage.js       # LocalStorage操作
+│   │   └── validator.js     # 书写练习校验
+│   ├── App.vue              # 根组件
+│   └── main.js              # 入口文件
+├── .gitignore
+├── index.html               # HTML模板
+├── package.json
+├── tailwind.config.js       # Tailwind配置
+└── vite.config.js           # Vite配置
+
+
+四、核心数据设计
+
+4.1 汉字数据结构（public/data/characters.json）
+
+严格按《现代汉语常用字表》前500字原序排列，字段定义如下：
+[
+  {
+    "id": 1,                  // 序号（1-500，对应原表顺序）
+    "hanzi": "一",            // 汉字（简体）
+    "pinyin": "yī",           // 拼音（带声调，如"yī""shì"）
+    "strokes": [              // 笔顺路径（SVG path数组，按书写顺序）
+      {
+        "order": 1,           // 笔画序号（从1开始）
+        "path": "M 100 200 L 300 200",  // SVG路径（坐标基于500x500画布）
+        "length": 200         // 路径长度（用于动画计算）
+      }
+    ],
+    "strokeCount": 1,         // 总笔画数
+    "structure": "单一结构",   // 字形结构（如"左右""上下"，可选）
+    "words": ["一天", "一个", "一起"],  // 组词（2-3个儿童高频词）
+    "sentence": "我有一个书包。"        // 例句（≤10字，配生活化场景）
+  }
+  // ... 剩余499字
+]
+
+
+4.2 本地存储数据结构（LocalStorage）
+
+// 键名：pinyin_learning_progress
+{
+  "currentId": 15,            // 当前学习到的字ID（默认1）
+  "learnedIds": [1,2,3,4],    // 已学习的字ID数组
+  "masteredIds": [1,2],       // 已掌握的字ID数组（练习正确率≥80%）
+  "wrongCount": {             // 错题统计（key为字ID，value为错误次数）
+    "3": 2,
+    "7": 1
+  },
+  "stars": 28,                // 累计星星数（练习通关奖励）
+  "lastLearnTime": "2026-05-03T19:00:00Z"  // 最后学习时间
+}
+
+
+五、核心功能实现方案
+
+5.1 发音功能（src/utils/speech.js）
+
+/**
+ * 文字转语音（支持汉字/拼音发音）
+ * @param {string} text - 待朗读文本（如"一"或"yī"）
+ * @param {boolean} isPinyin - 是否为拼音（拼音需指定lang="zh-Pinyin"）
+ */
+export function speak(text, isPinyin = false) {
+  if (!window.speechSynthesis) {
+    alert("您的浏览器不支持发音功能，推荐使用Chrome浏览器");
+    return;
+  }
+
+  // 停止当前发音
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = isPinyin ? "zh-Pinyin" : "zh-CN"; // 拼音需用特殊语言标签
+  utterance.rate = 0.8; // 语速放慢（适合儿童）
+  utterance.pitch = 1.2; // 音调稍高（更亲切）
+
+  window.speechSynthesis.speak(utterance);
+}
+
+
+5.2 笔顺动画（src/components/learning/StrokeAnimation.vue）
+
+<template>
+  <svg width="500" height="500" viewBox="0 0 500 500" class="mx-auto">
+    <!-- 田字格背景 -->
+    <rect x="50" y="50" width="400" height="400" fill="none" stroke="#e0e0e0" stroke-width="2"/>
+    <line x1="250" y1="50" x2="250" y2="450" stroke="#e0e0e0" stroke-dasharray="5,5"/>
+    <line x1="50" y1="250" x2="450" y2="250" stroke="#e0e0e0" stroke-dasharray="5,5"/>
+
+    <!-- 动态笔画 -->
+    <path
+      v-for="stroke in strokes"
+      :key="stroke.order"
+      :d="stroke.path"
+      fill="none"
+      stroke="#333"
+      stroke-width="12"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      :style="getStrokeStyle(stroke)"
+    />
+  </svg>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+
+const props = defineProps({
+  strokes: { type: Array, required: true } // 传入笔顺数据
+});
+
+const currentStrokeIndex = ref(0);
+
+// 计算笔画动画样式
+const getStrokeStyle = (stroke) => {
+  if (stroke.order > currentStrokeIndex.value + 1) {
+    return { opacity: 0 }; // 未到顺序的笔画隐藏
+  }
+  if (stroke.order === currentStrokeIndex.value + 1) {
+    // 当前笔画执行绘制动画
+    return {
+      strokeDasharray: stroke.length,
+      strokeDashoffset: stroke.length,
+      animation: `draw ${stroke.length / 200}s forwards`
+    };
+  }
+  return {}; // 已完成的笔画显示
+};
+
+// 逐笔演示
+onMounted(() => {
+  const timer = setInterval(() => {
+    if (currentStrokeIndex.value < props.strokes.length - 1) {
+      currentStrokeIndex.value++;
+    } else {
+      clearInterval(timer);
+    }
+  }, 1000); // 每秒演示一笔
+});
+</script>
+
+<style>
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+</style>
+
+
+5.3 书写练习（src/components/practice/WritingCanvas.vue）
+
+<template>
+  <canvas 
+    ref="canvas" 
+    width="400" 
+    height="400" 
+    @mousedown="startDraw" 
+    @mousemove="draw" 
+    @mouseup="endDraw"
+    @touchstart="handleTouchStart"
+    class="border-2 border-gray-300 rounded-lg mx-auto"
+  ></canvas>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+
+const canvas = ref(null);
+const ctx = ref(null);
+const isDrawing = ref(false);
+const lastX = ref(0);
+const lastY = ref(0);
+
+// 初始化画布（绘制田字格）
+onMounted(() => {
+  ctx.value = canvas.value.getContext('2d');
+  drawGrid();
+});
+
+// 绘制田字格
+const drawGrid = () => {
+  ctx.value.strokeStyle = '#e0e0e0';
+  ctx.value.lineWidth = 1;
+  // 外框
+  ctx.value.strokeRect(0, 0, 400, 400);
+  // 十字线
+  ctx.value.beginPath();
+  ctx.value.moveTo(200, 0);
+  ctx.value.lineTo(200, 400);
+  ctx.value.moveTo(0, 200);
+  ctx.value.lineTo(400, 200);
+  ctx.value.stroke();
+};
+
+// 开始绘画
+const startDraw = (e) => {
+  isDrawing.value = true;
+  [lastX.value, lastY.value] = getCoordinates(e);
+};
+
+// 绘画中
+const draw = (e) => {
+  if (!isDrawing.value) return;
+  const [x, y] = getCoordinates(e);
+  ctx.value.strokeStyle = '#ff4d4f'; // 儿童友好红色
+  ctx.value.lineWidth = 8;
+  ctx.value.lineCap = 'round';
+  ctx.value.beginPath();
+  ctx.value.moveTo(lastX.value, lastY.value);
+  ctx.value.lineTo(x, y);
+  ctx.value.stroke();
+  [lastX.value, lastY.value] = [x, y];
+};
+
+// 结束绘画
+const endDraw = () => {
+  isDrawing.value = false;
+  // TODO: 调用校验函数，比对用户笔画与标准笔顺
+};
+
+// 获取坐标（兼容触摸事件）
+const getCoordinates = (e) => {
+  const rect = canvas.value.getBoundingClientRect();
+  if (e.type.includes('touch')) {
+    return [
+      e.touches[0].clientX - rect.left,
+      e.touches[0].clientY - rect.top
+    ];
+  }
+  return [e.clientX - rect.left, e.clientY - rect.top];
+};
+</script>
+
+
+六、API接口说明（纯前端无后端API，仅本地数据交互）
+
+6.1 数据加载
+
+// 加载汉字数据
+export async function loadCharacters() {
+  const response = await fetch('/data/characters.json');
+  return response.json();
+}
+
+// 获取当前学习字
+export async function getCurrentCharacter(currentId) {
+  const characters = await loadCharacters();
+  return characters.find(char => char.id === currentId);
+}
+
+
+6.2 本地存储操作（src/utils/storage.js）
+
+const STORAGE_KEY = 'pinyin_learning_progress';
+
+// 获取进度
+export function getProgress() {
+  const defaultProgress = {
+    currentId: 1,
+    learnedIds: [],
+    masteredIds: [],
+    wrongCount: {},
+    stars: 0,
+    lastLearnTime: new Date().toISOString()
+  };
+  return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultProgress;
+}
+
+// 保存进度
+export function saveProgress(progress) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+}
+
+
+七、UI/UX设计规范
+
+7.1 视觉设计
+
+• 色彩方案：
+
+  • 主色调：#4CAF50（绿色，代表成长）
+
+  • 辅助色：#FF9800（橙色，强调按钮）、#2196F3（蓝色，功能按钮）
+
+  • 背景色：#F5F7FA（浅灰，保护视力）
+
+• 字体规范：
+
+  • 汉字：楷体（优先使用SimKai/STKaiti，确保笔顺规范）
+
+  • 字号：学习页汉字≥48px，按钮文字≥24px
+
+• 间距与尺寸：
+
+  • 按钮最小尺寸：80px × 80px（适合儿童手指点击）
+
+  • 卡片内边距：16px（避免内容拥挤）
+
+7.2 交互设计
+
+• 反馈机制：
+
+  • 正确操作：绿色对勾动画 + 星星奖励
+
+  • 错误操作：红色波浪线 + 语音提示“再试一次哦”
+
+• 防误触：
+
+  • 练习按钮点击后禁用1秒（防止重复提交）
+
+  • 滑动切换字卡需滑动距离≥50px才触发
+
+八、测试计划
+
+8.1 功能测试
+
+测试项 测试方法 预期结果
+
+发音功能 点击发音按钮 清晰朗读汉字/拼音，无杂音
+
+笔顺动画 进入学习页 按正确顺序逐笔演示，无跳帧
+
+书写练习 在Canvas上描红 实时显示轨迹，完成笔画后校验结果
+
+进度存储 关闭页面后重新打开 保留上次学习位置和错题记录
+
+8.2 兼容性测试
+
+• 移动端：iPhone SE（小屏）、iPad（平板）、Android手机（主流机型）
+
+• 浏览器：Chrome、Safari、Edge最新版
+
+九、部署指南
+
+9.1 本地开发
+
+# 安装依赖
+npm install
+
+# 启动开发服务器（访问 http://localhost:5173）
+npm run dev
+
+
+9.2 生产构建
+
+# 构建静态文件（输出到dist目录）
+npm run build
+
+# 预览构建结果
+npm run preview
+
+
+9.3 部署到GitHub Pages
+
+1. 在vite.config.js中设置base: '/pinyin-hanzi-learning/'
+2. 将dist目录文件推送到GitHub仓库的gh-pages分支
+3. 开启GitHub Pages功能，选择gh-pages分支作为源
+
+十、注意事项
+
+1. 数据准确性：需人工核对500字的拼音、笔顺数据（推荐参考《现代汉语词典》第7版）
+2. 性能优化：
+   • 图片/音频懒加载
+
+   • 笔顺动画使用requestAnimationFrame替代setTimeout
+
+3. 无障碍：支持键盘导航（Tab键切换按钮，Enter键确认）
+
+附件：
+• 《现代汉语常用字表》前500字清单

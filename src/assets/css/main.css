@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  body {
+    @apply bg-background text-gray-800;
+    overscroll-behavior-y: none;
+  }
+}
+
+@layer components {
+  .btn-kid {
+    @apply inline-flex items-center justify-center rounded-kid font-bold text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+    min-width: 80px;
+    min-height: 48px;
+  }
+  
+  .btn-kid-green {
+    @apply btn-kid bg-primary hover:bg-green-600;
+  }
+  
+  .btn-kid-orange {
+    @apply btn-kid bg-secondary hover:bg-orange-600;
+  }
+  
+  .btn-kid-blue {
+    @apply btn-kid bg-functional hover:bg-blue-600;
+  }
+  
+  .card-kid {
+    @apply bg-white rounded-2xl shadow-md p-4 border-2 border-transparent;
+  }
+  
+  .title-kid {
+    @apply text-2xl font-bold text-gray-800 tracking-wide;
+  }
+  
+  .hanzi-kid {
+    @apply font-kai text-kid-2xl text-gray-900 select-none;
+  }
+  
+  .pinyin-kid {
+    @apply text-kid-lg text-functional font-medium tracking-widest;
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+.animate-pop {
+  animation: pop 0.4s ease-out forwards;
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}

@@ -1,0 +1,26 @@
+{
+  "name": "pinyin-hanzi-learning",
+  "version": "1.0.0",
+  "description": "幼小衔接拼音汉字学习卡",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "generate-data": "node scripts/generate-data.js"
+  },
+  "dependencies": {
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0",
+    "hanzi-writer": "^3.5.0",
+    "pinyin-pro": "^3.20.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "vite": "^5.2.8",
+    "vite-plugin-pwa": "^0.19.8"
+  }
+}
