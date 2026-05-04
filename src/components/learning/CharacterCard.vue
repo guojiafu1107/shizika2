@@ -14,8 +14,8 @@
       </button>
     </div>
 
-    <div class="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div class="bg-orange-50 rounded-xl p-3">
+    <div class="w-full grid grid-cols-1 gap-3">
+      <div v-if="char.words && char.words.length > 0" class="bg-orange-50 rounded-xl p-3">
         <div class="text-xs text-orange-600 font-bold mb-1">组词</div>
         <div class="flex flex-wrap gap-2">
           <span

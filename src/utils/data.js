@@ -1,4 +1,4 @@
-import { pinyin } from 'pinyin-pro'
+import { pinyin, getStrokeCount } from 'pinyin-pro'
 
 let charactersCache = null
 
@@ -10,13 +10,19 @@ function enrichCharacter(c) {
       c.pinyin = ''
     }
   }
-  if (!c.words || c.words.length === 0) {
-    c.words = [`${c.hanzi}个`, `一${c.hanzi}`, `${c.hanzi}天`].filter(w => w.length <= 4).slice(0, 3)
+  // 笔画数：使用 pinyin-pro 内置查询
+  if (!c.strokeCount || c.strokeCount === 0) {
+    try {
+      c.strokeCount = getStrokeCount(c.hanzi)
+    } catch {
+      c.strokeCount = 0
+    }
   }
   if (!c.sentence) {
     c.sentence = `我会写${c.hanzi}字。`
   }
-  if (!c.strokeCount) c.strokeCount = 0
+  // words 仅在数据文件中同时提供了 id 和 hanzi 以外的有效数据时才保留，否则不展示（硬拼凑的组词已删除）
+  if (!c.words) c.words = []
   if (!c.strokes) c.strokes = []
   return c
 }
