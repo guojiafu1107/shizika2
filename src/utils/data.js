@@ -1,5 +1,4 @@
 import { pinyin } from 'pinyin-pro'
-import stroke from 'chinese-stroke'
 
 let charactersCache = null
 
@@ -11,20 +10,6 @@ function enrichCharacter(c) {
       c.pinyin = ''
     }
   }
-  // 笔画数：使用 chinese-stroke 查询
-  if (!c.strokeCount || c.strokeCount === 0) {
-    try {
-      const n = stroke.get(c.hanzi)
-      c.strokeCount = isNaN(n) ? 0 : n
-    } catch {
-      c.strokeCount = 0
-    }
-  }
-  if (!c.sentence) {
-    c.sentence = `我会写${c.hanzi}字。`
-  }
-  if (!c.words) c.words = []
-  if (!c.strokes) c.strokes = []
   return c
 }
 

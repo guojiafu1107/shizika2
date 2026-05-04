@@ -13,36 +13,6 @@
         🔊
       </button>
     </div>
-
-    <div class="w-full grid grid-cols-1 gap-3">
-      <div v-if="char.words && char.words.length > 0" class="bg-orange-50 rounded-xl p-3">
-        <div class="text-xs text-orange-600 font-bold mb-1">组词</div>
-        <div class="flex flex-wrap gap-2">
-          <span
-            v-for="word in char.words"
-            :key="word"
-            class="px-3 py-1 bg-white rounded-full text-orange-700 text-sm font-medium shadow-sm cursor-pointer active:scale-95 transition-transform"
-            @click="speak(word)"
-          >
-            {{ word }}
-          </span>
-        </div>
-      </div>
-      <div class="bg-blue-50 rounded-xl p-3">
-        <div class="text-xs text-blue-600 font-bold mb-1">例句</div>
-        <p
-          class="text-blue-800 text-sm leading-relaxed cursor-pointer"
-          @click="speak(char.sentence)"
-        >
-          {{ char.sentence }}
-        </p>
-      </div>
-    </div>
-
-    <div class="flex items-center gap-4 text-sm text-gray-500">
-      <span>笔画：{{ char.strokeCount }}画</span>
-      <span v-if="char.structure">结构：{{ char.structure }}</span>
-    </div>
   </div>
 </template>
 
