@@ -10,10 +10,11 @@
     "generate-data": "node scripts/generate-data.js"
   },
   "dependencies": {
-    "vue": "^3.4.21",
-    "vue-router": "^4.3.0",
+    "chinese-stroke": "^0.0.1",
     "hanzi-writer": "^3.5.0",
-    "pinyin-pro": "^3.20.0"
+    "pinyin-pro": "^3.20.0",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
