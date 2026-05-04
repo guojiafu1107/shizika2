@@ -1,13 +1,25 @@
 <template>
   <div class="flex flex-col gap-4 py-2">
-    <div class="flex items-center justify-between">
-      <button class="btn-kid-blue px-4 py-2" @click="prev" :disabled="currentId <= 1">⬅️ 上一个</button>
-      <div class="text-center">
-        <div class="text-xs text-gray-400">第 {{ currentId }} / {{ total }} 字</div>
-        <div class="text-sm font-bold text-primary">{{ char?.hanzi }}</div>
+    <div class="flex items-center justify-between gap-2">
+      <button class="btn-kid-blue px-4 py-2 text-sm" @click="prev" :disabled="currentId <= 1">⬅️ 上一个</button>
+
+      <div class="text-center flex items-center gap-1">
+        <input
+          ref="jumpInput"
+          v-model="jumpValue"
+          type="number"
+          :min="1"
+          :max="total"
+          class="w-16 text-center text-lg font-bold text-primary bg-primary/10 rounded-lg border-0 outline-none focus:ring-2 focus:ring-primary"
+          @keyup.enter="jumpTo"
+          @blur="jumpTo"
+        />
+        <span class="text-xs text-gray-400">/ {{ total }}</span>
       </div>
-      <button class="btn-kid-blue px-4 py-2" @click="next" :disabled="currentId >= total">下一个 ➡️</button>
+
+      <button class="btn-kid-blue px-4 py-2 text-sm" @click="next" :disabled="currentId >= total">下一个 ➡️</button>
     </div>
+    <div class="text-center text-sm font-bold text-primary">{{ char?.hanzi }} · {{ char?.pinyin }}</div>
 
     <CharacterCard v-if="char" :char="char" />
     <StrokeAnimation v-if="char" :key="char.hanzi" :hanzi="char.hanzi" />
@@ -36,9 +48,23 @@ const router = useRouter()
 const currentId = ref(1)
 const total = ref(500)
 const char = ref(null)
+const jumpValue = ref('')
+const jumpInput = ref(null)
 
 async function loadChar(id) {
   char.value = await getCharacterById(id)
+  jumpValue.value = String(id)
+}
+
+function jumpTo() {
+  let id = parseInt(jumpValue.value)
+  if (isNaN(id) || id < 1) id = 1
+  if (id > total.value) id = total.value
+  if (id !== currentId.value) {
+    currentId.value = id
+    router.replace(`/learn/${id}`)
+  }
+  jumpValue.value = String(id)
 }
 
 function prev() {
